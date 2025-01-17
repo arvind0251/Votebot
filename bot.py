@@ -1,31 +1,38 @@
-import os
-from telethon import TelegramClient
-from pymongo import MongoClient
-from config import API_ID, API_HASH, BOT_TOKEN, MONGO_URI
+from telethon import TelegramClient, events
+from telethon.tl.custom import Button
+from config import API_ID, API_HASH, BOT_TOKEN
 
-# Telegram client setup using Telethon
+# Telegram Client Setup
 client = TelegramClient('bot', API_ID, API_HASH)
 
-# Connect to MongoDB
-mongo_client = MongoClient(MONGO_URI)
-db = mongo_client['vote_database']  # MongoDB database name
-votes_collection = db['votes']  # MongoDB collection name for votes
+# Bot Start Function
+async def send_welcome_message(event):
+    # Video URL (MP4)
+    video_url = 'https://files.catbox.moe/xdo3pd.mp4'  # Your video URL
 
-# Function to save a vote to MongoDB
-def save_vote(user_id, vote_choice):
-    votes_collection.insert_one({"user_id": user_id, "vote_choice": vote_choice})
-    print(f"Vote saved for user: {user_id}, Choice: {vote_choice}")
+    # Button to show after video with a link
+    button = [
+        [Button.inline("Click Me!", data="button_click")],  # Inline button
+        [Button.url("Join Our Group", "https://t.me/+1WQ8gB5cgHs0ZDg1")]  # Button with URL
+    ]
+
+    # Send video with button
+    await event.reply(
+        "Welcome to the vote bot! Here's a video:",
+        file=video_url,  # Video file (can be URL or local file path)
+        buttons=button
+    )
+
+# Handling /start command
+@client.on(events.NewMessage(pattern='/start'))
+async def handler(event):
+    await send_welcome_message(event)
 
 # Start the bot with the provided bot token
 async def main():
     await client.start(bot_token=BOT_TOKEN)
     print("Bot started successfully!")
-
-    # Example of saving a vote when a user sends a message
-    async for message in client.iter_messages('your_channel_or_group_name'):
-        user_id = message.sender_id
-        vote_choice = message.text  # Example, use a vote system here
-        save_vote(user_id, vote_choice)
+    await client.run_until_disconnected()
 
 # Run the bot
 client.loop.run_until_complete(main())
