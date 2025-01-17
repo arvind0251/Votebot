@@ -1,8 +1,12 @@
+import time
+import asyncio
 from pyrogram import Client, filters
 from pyrogram.errors import BadMsgNotification
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import asyncio
 from config import API_ID, API_HASH, BOT_TOKEN
+
+# Time synchronization delay
+time.sleep(2)  # Wait for 2 seconds to sync with Telegram servers
 
 # Initialize bot client
 bot = Client("VoteBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
