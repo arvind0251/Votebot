@@ -1,2 +1,2 @@
 # Configuration file
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "7909901942:AAEgtEcwAyN3oxFYO0Tqqlfb8vUZYSI8wi8"
