@@ -1,7 +1,9 @@
-# Telegram API credentials (from BotFather)
-API_ID = 1234567  # Replace with your actual API ID
-API_HASH = "your_api_hash_here"  # Replace with your actual API Hash
-BOT_TOKEN = "your_bot_token_here"  # Replace with your actual Bot Token
+from dotenv import load_dotenv
+import os
 
-# MongoDB URI (for MongoDB connection)
-MONGO_URI = "your_mongo_uri_here"  # Replace with your MongoDB URI (optional)
+load_dotenv()
+
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
