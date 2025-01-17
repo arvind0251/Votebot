@@ -1,12 +1,22 @@
 import time
 import asyncio
+from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.errors import BadMsgNotification
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import API_ID, API_HASH, BOT_TOKEN
 
-# Time synchronization delay
-time.sleep(2)  # Wait for 2 seconds to sync with Telegram servers
+# Sync system time with Telegram servers
+async def sync_time():
+    while True:
+        try:
+            async with Client("TimeSyncBot", api_id=API_ID, api_hash=API_HASH) as temp_bot:
+                await temp_bot.send_message("me", f"Server Time Sync: {datetime.utcnow()}")
+                print("✅ Time Sync Successful!")
+                break
+        except Exception as e:
+            print(f"⏳ Retrying Time Sync... {e}")
+            await asyncio.sleep(5)  # Wait for 5 seconds before retrying
 
 # Initialize bot client
 bot = Client("VoteBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -25,8 +35,8 @@ async def start(_, message):
             ])
         )
     except BadMsgNotification:
-        print("Time sync error, retrying...")
-        await asyncio.sleep(5)  # Wait for 5 seconds before retrying
+        print("⏳ Time sync error, retrying...")
+        await asyncio.sleep(5)
         await start(_, message)
 
 # Create a new poll
@@ -37,10 +47,8 @@ async def create_vote(_, query):
             "Send me the **poll question** (e.g., 'Which is your favorite color?')."
         )
 
-        # Wait for response
         poll_question = await bot.listen(query.message.chat.id)
 
-        # Store question
         chat_id = query.message.chat.id
         votes[chat_id] = {"question": poll_question.text, "options": {}, "voters": {}}
 
@@ -58,8 +66,8 @@ async def create_vote(_, query):
             "**Poll Created Successfully!**\n\nNow use /vote to start voting."
         )
     except BadMsgNotification:
-        print("Time sync error, retrying...")
-        await asyncio.sleep(5)  # Wait for 5 seconds before retrying
+        print("⏳ Time sync error, retrying...")
+        await asyncio.sleep(5)
         await create_vote(_, query)
 
 # Start voting
@@ -95,7 +103,6 @@ async def handle_vote(_, query):
     votes[chat_id]["options"][option] += 1
     votes[chat_id]["voters"][user_id] = option
 
-    # Update poll
     buttons = [
         [InlineKeyboardButton(f"{opt} ({count})", callback_data=f"vote_{opt}")]
         for opt, count in votes[chat_id]["options"].items()
@@ -108,5 +115,9 @@ async def handle_vote(_, query):
 
     await query.answer("Vote counted!")
 
-# Run bot
-bot.run()
+# Run bot with time sync
+async def main():
+    await sync_time()  # Sync time before running the bot
+    bot.run()
+
+asyncio.run(main())
