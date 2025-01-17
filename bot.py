@@ -2,12 +2,13 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import API_ID, API_HASH, BOT_TOKEN
+from collections import defaultdict
 
 # Initialize bot client
 bot = Client("VoteBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Store votes in a dictionary
-votes = {}
+votes = defaultdict(lambda: {"question": None, "options": {}, "voters": set()})
 
 # Start Command
 @bot.on_message(filters.command("start"))
@@ -22,24 +23,32 @@ async def start(_, message):
 # Create a new poll
 @bot.on_callback_query(filters.regex("create_vote"))
 async def create_vote(_, query):
-    await query.message.edit_text(
-        "Send me the **poll question** (e.g., 'Which is your favorite color?')."
-    )
-
-    poll_question = await bot.listen(query.message.chat.id)
-
     chat_id = query.message.chat.id
-    votes[chat_id] = {"question": poll_question.text, "options": {}, "voters": {}}
 
-    await query.message.reply_text(
-        "Now send **poll options** one by one.\nSend 'done' when finished."
-    )
+    await query.message.edit_text("Send me the **poll question** (e.g., 'Which is your favorite color?').")
+
+    try:
+        poll_question = await bot.listen(chat_id, timeout=60)
+        votes[chat_id]["question"] = poll_question.text
+    except asyncio.TimeoutError:
+        await query.message.reply_text("Timed out. Use /start to retry.")
+        return
+
+    await query.message.reply_text("Now send **poll options** one by one. Send 'done' when finished.")
 
     while True:
-        option = await bot.listen(query.message.chat.id)
-        if option.text.lower() == "done":
-            break
-        votes[chat_id]["options"][option.text] = 0
+        try:
+            option = await bot.listen(chat_id, timeout=60)
+            if option.text.lower() == "done":
+                break
+            votes[chat_id]["options"][option.text] = 0
+        except asyncio.TimeoutError:
+            await query.message.reply_text("Timed out. Use /start to retry.")
+            return
+
+    if not votes[chat_id]["options"]:
+        await query.message.reply_text("No options provided. Use /start to retry.")
+        return
 
     await query.message.reply_text(
         "**Poll Created Successfully!**\n\nNow use /vote to start voting."
@@ -75,8 +84,12 @@ async def handle_vote(_, query):
         return
 
     option = query.data.split("_", 1)[1]
+    if option not in votes[chat_id]["options"]:
+        await query.answer("Invalid option!", show_alert=True)
+        return
+
     votes[chat_id]["options"][option] += 1
-    votes[chat_id]["voters"][user_id] = option
+    votes[chat_id]["voters"].add(user_id)
 
     buttons = [
         [InlineKeyboardButton(f"{opt} ({count})", callback_data=f"vote_{opt}")]
