@@ -2,7 +2,6 @@ from pyrogram import Client, filters
 from pyrogram.errors import BadMsgNotification
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import asyncio
-
 from config import API_ID, API_HASH, BOT_TOKEN
 
 # Initialize bot client
@@ -23,13 +22,8 @@ async def start(_, message):
         )
     except BadMsgNotification:
         print("Time sync error, retrying...")
-        await asyncio.sleep(3)  # Wait for a short duration before retrying
-        await message.reply_text(
-            "**Welcome to the Voting Bot!**\n\nUse /vote to create a new vote.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Create a Vote", callback_data="create_vote")]
-            ])
-        )
+        await asyncio.sleep(5)  # Wait for 5 seconds before retrying
+        await start(_, message)
 
 # Create a new poll
 @bot.on_callback_query(filters.regex("create_vote"))
@@ -61,7 +55,7 @@ async def create_vote(_, query):
         )
     except BadMsgNotification:
         print("Time sync error, retrying...")
-        await asyncio.sleep(3)  # Wait for a short duration before retrying
+        await asyncio.sleep(5)  # Wait for 5 seconds before retrying
         await create_vote(_, query)
 
 # Start voting
